@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../models.dart';
 import '../store.dart';
@@ -8,13 +9,14 @@ Future<Category?> showCategoryDialog(
   BuildContext context, {
   required TxType type,
   Category? edit,
-}) {
+}) async {
   final nameCtl = TextEditingController(text: edit?.name ?? '');
   var icon = edit?.icon ?? 9;
   var color = edit?.color ?? kColors[7];
 
-  return showDialog<Category>(
-    context: context,
+  final result = showOverlay<Category>(
+    context,
+    DialogConfiguration(),
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => AlertDialog(
         title: Text(edit == null ? 'New category' : 'Edit category'),
@@ -26,8 +28,7 @@ Future<Category?> showCategoryDialog(
               TextField(
                 controller: nameCtl,
                 autofocus: edit == null,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(hintText: 'Name'),
+                placeholder: const Text('Name'),
               ),
               const SizedBox(height: 16),
               Wrap(
@@ -35,17 +36,23 @@ Future<Category?> showCategoryDialog(
                 runSpacing: 6,
                 children: [
                   for (var i = 0; i < kIcons.length; i++)
-                    InkResponse(
+                    GestureDetector(
                       onTap: () => setState(() => icon = i),
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: icon == i
-                            ? Color(color)
-                            : Theme.of(ctx).colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          kIcons[i],
-                          size: 20,
-                          color: icon == i ? Colors.white : Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: icon == i
+                              ? Color(color)
+                              : Theme.of(ctx).colorScheme.muted,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: HugeIcon(
+                            icon: kIcons[i],
+                            size: 20,
+                            color: icon == i ? const Color(0xFFFFFFFF) : Theme.of(ctx).colorScheme.mutedForeground,
+                          ),
                         ),
                       ),
                     ),
@@ -57,13 +64,23 @@ Future<Category?> showCategoryDialog(
                 runSpacing: 8,
                 children: [
                   for (final c in kColors)
-                    InkResponse(
+                    GestureDetector(
                       onTap: () => setState(() => color = c),
-                      child: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Color(c),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Color(c),
+                          shape: BoxShape.circle,
+                        ),
                         child: color == c
-                            ? const Icon(Icons.check, size: 16, color: Colors.white)
+                            ? const Center(
+                                child: HugeIcon(
+                                  icon: HugeIcons.strokeRoundedCheck,
+                                  color: Color(0xFFFFFFFF),
+                                  size: 16,
+                                ),
+                              )
                             : null,
                       ),
                     ),
@@ -73,8 +90,11 @@ Future<Category?> showCategoryDialog(
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
+          Button.ghost(
+            onPressed: () => closeOverlay(ctx),
+            child: const Text('Cancel'),
+          ),
+          Button.primary(
             onPressed: () {
               final name = nameCtl.text.trim();
               if (name.isEmpty) return;
@@ -87,7 +107,7 @@ Future<Category?> showCategoryDialog(
                 budget: edit?.budget ?? 0,
               );
               store.saveCategory(c);
-              Navigator.pop(ctx, c);
+              closeOverlay(ctx, c);
             },
             child: const Text('Save'),
           ),
@@ -95,4 +115,5 @@ Future<Category?> showCategoryDialog(
       ),
     ),
   );
+  return result.future;
 }

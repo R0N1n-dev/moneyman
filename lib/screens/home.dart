@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../models.dart';
 import '../store.dart';
@@ -37,7 +38,8 @@ class _HomePageState extends State<HomePage> {
               .where((t) =>
                   t.note.toLowerCase().contains(q) ||
                   store.cat(t.categoryId).name.toLowerCase().contains(q) ||
-                  t.amount.toString().contains(q))
+                  t.amount.toString().contains(q) ||
+                  t.method.toLowerCase().contains(q))
               .toList();
         }
 
@@ -49,28 +51,38 @@ class _HomePageState extends State<HomePage> {
 
         return CustomScrollView(
           slivers: [
-            SliverAppBar(
-              pinned: true,
-              title: _searching
-                  ? TextField(
-                      controller: _query,
-                      autofocus: true,
-                      onChanged: (_) => setState(() {}),
-                      decoration: const InputDecoration(
-                        hintText: 'Search notes, categories, amounts',
-                        prefixIcon: Icon(Icons.search),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(child: const MonthSwitcher()),
+                    if (_searching)
+                      Expanded(
+                        child: TextField(
+                          controller: _query,
+                          autofocus: true,
+                          onChanged: (_) => setState(() {}),
+                          placeholder: const Text('Search...'),
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    Button.ghost(
+                      onPressed: () => setState(() {
+                        _searching = !_searching;
+                        if (!_searching) _query.clear();
+                      }),
+                      child: HugeIcon(
+                        icon: _searching
+                            ? HugeIcons.strokeRoundedCancel01
+                            : HugeIcons.strokeRoundedSearch01,
+                        size: 20,
                       ),
-                    )
-                  : const MonthSwitcher(),
-              actions: [
-                IconButton(
-                  icon: Icon(_searching ? Icons.close : Icons.search),
-                  onPressed: () => setState(() {
-                    _searching = !_searching;
-                    if (!_searching) _query.clear();
-                  }),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
             SliverToBoxAdapter(child: _Summary()),
             SliverToBoxAdapter(
@@ -79,20 +91,20 @@ class _HomePageState extends State<HomePage> {
                 child: Wrap(
                   spacing: 8,
                   children: [
-                    ChoiceChip(
-                      label: const Text('All'),
-                      selected: _filter == null,
-                      onSelected: (_) => setState(() => _filter = null),
+                    Chip(
+                      onPressed: () => setState(() => _filter = null),
+                      style: _filter == null ? ButtonStyle.primary() : ButtonStyle.outline(),
+                      child: const Text('All'),
                     ),
-                    ChoiceChip(
-                      label: const Text('Expenses'),
-                      selected: _filter == TxType.expense,
-                      onSelected: (_) => setState(() => _filter = TxType.expense),
+                    Chip(
+                      onPressed: () => setState(() => _filter = TxType.expense),
+                      style: _filter == TxType.expense ? ButtonStyle.primary() : ButtonStyle.outline(),
+                      child: const Text('Expenses'),
                     ),
-                    ChoiceChip(
-                      label: const Text('Income'),
-                      selected: _filter == TxType.income,
-                      onSelected: (_) => setState(() => _filter = TxType.income),
+                    Chip(
+                      onPressed: () => setState(() => _filter = TxType.income),
+                      style: _filter == TxType.income ? ButtonStyle.primary() : ButtonStyle.outline(),
+                      child: const Text('Income'),
                     ),
                   ],
                 ),
@@ -107,16 +119,22 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.receipt_long_outlined,
-                            size: 64, color: Theme.of(context).colorScheme.outline),
+                        HugeIcon(
+                          icon: HugeIcons.strokeRoundedReceipt,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.mutedForeground,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           q.isNotEmpty ? 'Nothing matches your search' : 'No transactions this month',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).typography.large,
                         ),
                         if (q.isEmpty) ...[
                           const SizedBox(height: 4),
-                          const Text('Tap Add to record your first one.'),
+                          Text(
+                            'Tap Add to record your first one.',
+                            style: Theme.of(context).typography.small,
+                          ),
                         ],
                       ],
                     ),
@@ -128,7 +146,7 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 sliver: SliverList.separated(
                   itemCount: days.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
                   itemBuilder: (context, i) => _DayGroup(
                     key: ValueKey('${days[i].millisecondsSinceEpoch}-$_filter-${_searching && q.isNotEmpty}'),
                     day: days[i],
@@ -147,8 +165,6 @@ class _HomePageState extends State<HomePage> {
 class _Summary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
     final income = store.total(TxType.income);
     final spent = store.total(TxType.expense);
     final balance = income - spent;
@@ -158,12 +174,6 @@ class _Summary extends StatelessWidget {
     final daysInMonth = DateTime(store.month.year, store.month.month + 1, 0).day;
     final daysLeft = store.isCurrentMonth ? daysInMonth - now.day + 1 : 0;
     final remaining = budget - spent;
-
-    final barColor = ratio >= 1
-        ? cs.error
-        : ratio >= 0.8
-            ? Colors.orange
-            : cs.primary;
 
     String hint;
     if (budget <= 0) {
@@ -178,66 +188,57 @@ class _Summary extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: cs.primaryContainer,
-          borderRadius: BorderRadius.circular(28),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Balance', style: tt.labelLarge?.copyWith(color: cs.onPrimaryContainer)),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                money(balance, store.currency),
-                style: tt.headlineLarge?.copyWith(
-                  color: cs.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Balance', style: Theme.of(context).typography.base),
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  money(balance, store.currency),
+                  style: Theme.of(context).typography.x3Large.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _Stat(
-                    icon: Icons.arrow_downward,
-                    label: 'Income',
-                    value: money(income, store.currency),
-                    color: cs.onPrimaryContainer,
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Stat(
+                      icon: HugeIcons.strokeRoundedArrowDown01,
+                      label: 'Income',
+                      value: money(income, store.currency),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _Stat(
-                    icon: Icons.arrow_upward,
-                    label: 'Spent',
-                    value: money(spent, store.currency),
-                    color: cs.onPrimaryContainer,
+                  Expanded(
+                    child: _Stat(
+                      icon: HugeIcons.strokeRoundedArrowUp01,
+                      label: 'Spent',
+                      value: money(spent, store.currency),
+                    ),
                   ),
+                ],
+              ),
+              if (budget > 0) ...[
+                const SizedBox(height: 18),
+                LinearProgressIndicator(
+                  value: ratio.clamp(0.0, 1.0).toDouble(),
                 ),
               ],
-            ),
-            if (budget > 0) ...[
-              const SizedBox(height: 18),
-              LinearProgressIndicator(
-                value: ratio.clamp(0.0, 1.0).toDouble(),
-                minHeight: 10,
-                borderRadius: BorderRadius.circular(8),
-                color: barColor,
-                backgroundColor: cs.onPrimaryContainer.withValues(alpha: 0.15),
+              const SizedBox(height: 8),
+              Text(
+                budget > 0
+                    ? '${(ratio * 100).round()}% of ${money(budget, store.currency)} used. $hint'
+                    : hint,
+                style: Theme.of(context).typography.small,
               ),
             ],
-            const SizedBox(height: 8),
-            Text(
-              budget > 0
-                  ? '${(ratio * 100).round()}% of ${money(budget, store.currency)} used. $hint'
-                  : hint,
-              style: tt.bodySmall?.copyWith(color: cs.onPrimaryContainer),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -245,34 +246,41 @@ class _Summary extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final String label;
   final String value;
-  final Color color;
-  const _Stat({required this.icon, required this.label, required this.value, required this.color});
+  const _Stat({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: color.withValues(alpha: 0.12),
-          child: Icon(icon, size: 16, color: color),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: cs.muted,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: HugeIcon(icon: icon, size: 16, color: cs.mutedForeground),
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: tt.labelSmall?.copyWith(color: color)),
+              Text(label, style: Theme.of(context).typography.xSmall),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: tt.titleSmall?.copyWith(color: color, fontWeight: FontWeight.w600),
+                  style: Theme.of(context).typography.small.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ),
             ],
@@ -291,35 +299,42 @@ class _DayGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final spent = items.where((t) => t.type == TxType.expense).fold(0.0, (s, t) => s + t.amount);
     final earned = items.where((t) => t.type == TxType.income).fold(0.0, (s, t) => s + t.amount);
     final net = earned - spent;
 
     return Card(
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        initiallyExpanded: initiallyExpanded,
-        shape: const Border(),
-        collapsedShape: const Border(),
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-        childrenPadding: const EdgeInsets.only(bottom: 8),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(dayLabel(day), style: const TextStyle(fontWeight: FontWeight.w600)),
+      child: Collapsible(
+        isExpanded: initiallyExpanded,
+        children: [
+          CollapsibleTrigger(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(dayLabel(day), style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                Text(
+                  '${net >= 0 ? '+' : '-'}${money(net.abs(), store.currency)}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: net >= 0 ? const Color(0xFF16A34A) : Theme.of(context).colorScheme.mutedForeground,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              '${net >= 0 ? '+' : '-'}${money(net.abs(), store.currency)}',
-              style: TextStyle(
-                fontSize: 14,
-                color: net >= 0 ? Colors.green.shade600 : cs.onSurfaceVariant,
-              ),
+          ),
+          CollapsibleContent(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text('${items.length} ${items.length == 1 ? 'item' : 'items'}', style: Theme.of(context).typography.small),
+                ),
+                for (final t in items) _TxTile(tx: t),
+              ],
             ),
-          ],
-        ),
-        subtitle: Text('${items.length} ${items.length == 1 ? 'item' : 'items'}'),
-        children: [for (final t in items) _TxTile(tx: t)],
+          ),
+        ],
       ),
     );
   }
@@ -335,38 +350,54 @@ class _TxTile extends StatelessWidget {
     final c = store.cat(tx.categoryId);
     final isIncome = tx.type == TxType.income;
 
-    return Dismissible(
-      key: ValueKey(tx.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: cs.errorContainer,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: Icon(Icons.delete_outline, color: cs.onErrorContainer),
-      ),
-      onDismissed: (_) {
-        store.deleteTx(tx.id);
-        toast(context, 'Deleted', action: 'Undo', onAction: () => store.saveTx(tx));
-      },
-      child: ListTile(
-        onTap: () => showTxSheet(context, edit: tx),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        leading: CircleAvatar(
-          backgroundColor: c.colorValue.withValues(alpha: 0.18),
-          child: Icon(c.iconData, color: c.colorValue, size: 22),
-        ),
-        title: Text(
-          tx.note.isEmpty ? c.name : tx.note,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text('${c.name} \u00b7 ${tx.method}'),
-        trailing: Text(
-          '${isIncome ? '+' : '-'}${money(tx.amount, store.currency)}',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isIncome ? Colors.green.shade600 : cs.onSurface,
-          ),
+    return GestureDetector(
+      onTap: () => showTxSheet(context, edit: tx),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: c.colorValue.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: HugeIcon(icon: c.iconData, color: c.colorValue, size: 20),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tx.note.isEmpty ? c.name : tx.note,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).typography.base,
+                  ),
+                  Text('${c.name} · ${tx.method}', style: Theme.of(context).typography.small),
+                ],
+              ),
+            ),
+            Text(
+              '${isIncome ? '+' : '-'}${money(tx.amount, store.currency)}',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isIncome ? const Color(0xFF16A34A) : cs.foreground,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Button.ghost(
+              onPressed: () {
+                store.deleteTx(tx.id);
+                toast(context, 'Deleted', action: 'Undo', onAction: () => store.saveTx(tx));
+              },
+              child: HugeIcon(icon: HugeIcons.strokeRoundedDelete01, size: 18, color: cs.destructive),
+            ),
+          ],
         ),
       ),
     );

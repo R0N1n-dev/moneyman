@@ -4,7 +4,7 @@ publish_to: none
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.13.0
 
 dependencies:
   flutter:
@@ -15,6 +15,9 @@ dependencies:
   share_plus: ^13.3.1
   path_provider: ^2.1.4
   file_picker: ^13.4.1
+  shadcn_flutter: 0.0.55
+  shadcn_flutter_material: 0.0.54
+  hugeicons: 4.4.0
 
   material_ui: any
 dev_dependencies:

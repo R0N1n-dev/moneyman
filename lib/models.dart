@@ -1,34 +1,34 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' show Color;
 
 enum TxType { expense, income }
 
 enum Repeat { weekly, monthly }
 
-const List<IconData> kIcons = [
-  Icons.restaurant,
-  Icons.directions_bus,
-  Icons.phone_android,
-  Icons.home,
-  Icons.shopping_bag,
-  Icons.receipt_long,
-  Icons.favorite,
-  Icons.movie,
-  Icons.school,
-  Icons.category,
-  Icons.payments,
-  Icons.store,
-  Icons.card_giftcard,
-  Icons.savings,
-  Icons.work,
-  Icons.flight,
-  Icons.pets,
-  Icons.fitness_center,
-  Icons.local_gas_station,
-  Icons.coffee,
-  Icons.child_care,
-  Icons.build,
-  Icons.wifi,
-  Icons.volunteer_activism,
+const List<List<List<dynamic>>> kIcons = [
+  HugeIcons.strokeRoundedRestaurant01,
+  HugeIcons.strokeRoundedBus01,
+  HugeIcons.strokeRoundedSmartPhone01,
+  HugeIcons.strokeRoundedHome01,
+  HugeIcons.strokeRoundedShoppingBag01,
+  HugeIcons.strokeRoundedReceipt,
+  HugeIcons.strokeRoundedHeartPulse,
+  HugeIcons.strokeRoundedFilm01,
+  HugeIcons.strokeRoundedGraduationScroll,
+  HugeIcons.strokeRoundedTag01,
+  HugeIcons.strokeRoundedBriefcase01,
+  HugeIcons.strokeRoundedStore01,
+  HugeIcons.strokeRoundedGift,
+  HugeIcons.strokeRoundedWallet01,
+  HugeIcons.strokeRoundedAirplane01,
+  HugeIcons.strokeRoundedCat,
+  HugeIcons.strokeRoundedDumbbell01,
+  HugeIcons.strokeRoundedGasPipe,
+  HugeIcons.strokeRoundedCoffee01,
+  HugeIcons.strokeRoundedBaby01,
+  HugeIcons.strokeRoundedSettings01,
+  HugeIcons.strokeRoundedWifi01,
+  HugeIcons.strokeRoundedHeart,
 ];
 
 const List<int> kColors = [
@@ -65,7 +65,7 @@ class Category {
     this.budget = 0,
   });
 
-  IconData get iconData => kIcons[icon % kIcons.length];
+  List<List<dynamic>> get iconData => kIcons[icon % kIcons.length];
   Color get colorValue => Color(color);
 
   Map<String, dynamic> toJson() => {

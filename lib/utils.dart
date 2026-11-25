@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:intl/intl.dart';
 
 DateTime dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -22,79 +22,108 @@ Future<double?> askNumber(
   required String title,
   double initial = 0,
   String? hint,
-}) {
+}) async {
   final ctl = TextEditingController(
     text: initial == 0 ? '' : NumberFormat('0.##').format(initial),
   );
-  return showDialog<double>(
-    context: context,
+  final result = showOverlay<double>(
+    context,
+    DialogConfiguration(),
     builder: (ctx) => AlertDialog(
       title: Text(title),
       content: TextField(
         controller: ctl,
         autofocus: true,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(hintText: hint ?? 'Amount'),
+        placeholder: Text(hint ?? 'Amount'),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-        FilledButton(
+        Button.ghost(
+          onPressed: () => closeOverlay(ctx),
+          child: const Text('Cancel'),
+        ),
+        Button.primary(
           onPressed: () {
             final v = double.tryParse(ctl.text.replaceAll(',', '').trim());
-            Navigator.pop(ctx, v ?? 0);
+            closeOverlay(ctx, v ?? 0);
           },
           child: const Text('Save'),
         ),
       ],
     ),
   );
+  return result.future;
 }
 
 Future<String?> askText(
   BuildContext context, {
   required String title,
   String initial = '',
-}) {
+}) async {
   final ctl = TextEditingController(text: initial);
-  return showDialog<String>(
-    context: context,
+  final result = showOverlay<String>(
+    context,
+    DialogConfiguration(),
     builder: (ctx) => AlertDialog(
       title: Text(title),
       content: TextField(controller: ctl, autofocus: true),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, ctl.text.trim()),
+        Button.ghost(
+          onPressed: () => closeOverlay(ctx),
+          child: const Text('Cancel'),
+        ),
+        Button.primary(
+          onPressed: () => closeOverlay(ctx, ctl.text.trim()),
           child: const Text('Save'),
         ),
       ],
     ),
   );
+  return result.future;
 }
 
 Future<bool> confirm(BuildContext context, String title, String message) async {
-  final r = await showDialog<bool>(
-    context: context,
+  final result = showOverlay<bool>(
+    context,
+    DialogConfiguration(),
     builder: (ctx) => AlertDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirm')),
+        Button.ghost(
+          onPressed: () => closeOverlay(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        Button.primary(
+          onPressed: () => closeOverlay(ctx, true),
+          child: const Text('Confirm'),
+        ),
       ],
     ),
   );
-  return r ?? false;
+  return await result.future ?? false;
 }
 
 void toast(BuildContext context, String msg, {String? action, VoidCallback? onAction}) {
-  final m = ScaffoldMessenger.of(context);
-  m.hideCurrentSnackBar();
-  m.showSnackBar(
-    SnackBar(
-      content: Text(msg),
-      behavior: SnackBarBehavior.floating,
-      action: action == null ? null : SnackBarAction(label: action, onPressed: onAction ?? () {}),
+  showToast(
+    context: context,
+    builder: (context, overlay) => Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(child: Text(msg)),
+            if (action != null)
+              Button.ghost(
+                onPressed: () {
+                  onAction?.call();
+                  overlay.close();
+                },
+                child: Text(action),
+              ),
+          ],
+        ),
+      ),
     ),
   );
 }

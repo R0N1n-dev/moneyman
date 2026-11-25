@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 
 import '../models.dart';
@@ -15,7 +16,7 @@ class PlanPage extends StatelessWidget {
       listenable: store,
       builder: (context, _) {
         final cs = Theme.of(context).colorScheme;
-        final tt = Theme.of(context).textTheme;
+        final tt = Theme.of(context).typography;
         final cur = store.currency;
         final spentByCat = store.byCategory(TxType.expense, DateTime(DateTime.now().year, DateTime.now().month));
         final spentTotal = store.total(TxType.expense, DateTime(DateTime.now().year, DateTime.now().month));
@@ -25,21 +26,10 @@ class PlanPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            Text('Plan', style: tt.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+            Text('Plan', style: tt.x3Large.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
             Card(
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                title: const Text('Monthly budget'),
-                subtitle: Text(
-                  store.monthlyBudget > 0
-                      ? '${money(spentTotal, cur)} spent this month'
-                      : 'Not set',
-                ),
-                trailing: Text(
-                  store.monthlyBudget > 0 ? money(store.monthlyBudget, cur) : 'Set',
-                  style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.primary),
-                ),
+              child: GestureDetector(
                 onTap: () async {
                   final v = await askNumber(
                     context,
@@ -48,6 +38,32 @@ class PlanPage extends StatelessWidget {
                   );
                   if (v != null) store.setBudget(v);
                 },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Monthly budget'),
+                            const SizedBox(height: 4),
+                            Text(
+                              store.monthlyBudget > 0
+                                  ? '${money(spentTotal, cur)} spent this month'
+                                  : 'Not set',
+                              style: Theme.of(context).typography.small,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        store.monthlyBudget > 0 ? money(store.monthlyBudget, cur) : 'Set',
+                        style: tt.large.copyWith(fontWeight: FontWeight.w700, color: cs.primary),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -71,7 +87,7 @@ class PlanPage extends StatelessWidget {
                 child: _CategoryCard(cat: c, spent: 0),
               ),
             const SizedBox(height: 16),
-            Text('Recurring', style: tt.titleMedium),
+            Text('Recurring', style: tt.large),
             const SizedBox(height: 8),
             if (store.recurring.isEmpty)
               Card(
@@ -80,7 +96,7 @@ class PlanPage extends StatelessWidget {
                   child: Text(
                     'Nothing recurring. When you add a transaction, choose Weekly or Monthly '
                     'and it will be logged for you automatically.',
-                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                    style: tt.base.copyWith(color: cs.mutedForeground),
                   ),
                 ),
               )
@@ -89,27 +105,49 @@ class PlanPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: store.cat(r.categoryId).colorValue.withValues(alpha: 0.18),
-                        child: Icon(
-                          store.cat(r.categoryId).iconData,
-                          color: store.cat(r.categoryId).colorValue,
-                        ),
-                      ),
-                      title: Text(r.note.isEmpty ? store.cat(r.categoryId).name : r.note),
-                      subtitle: Text(
-                        '${money(r.amount, cur)} \u00b7 ${r.repeat == Repeat.weekly ? 'Weekly' : 'Monthly'}'
-                        ' \u00b7 next ${DateFormat('d MMM').format(r.next)}',
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () async {
-                          if (await confirm(context, 'Stop recurring?',
-                              'Past transactions stay. No new ones will be added.')) {
-                            store.deleteRecurring(r.id);
-                          }
-                        },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: store.cat(r.categoryId).colorValue.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Center(
+                              child: HugeIcon(
+                                icon: store.cat(r.categoryId).iconData,
+                                color: store.cat(r.categoryId).colorValue,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(r.note.isEmpty ? store.cat(r.categoryId).name : r.note),
+                                Text(
+                                  '${money(r.amount, cur)} · ${r.repeat == Repeat.weekly ? 'Weekly' : 'Monthly'}'
+                                  ' · next ${DateFormat('d MMM').format(r.next)}',
+                                  style: Theme.of(context).typography.small,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Button.ghost(
+                            onPressed: () async {
+                              if (await confirm(context, 'Stop recurring?',
+                                  'Past transactions stay. No new ones will be added.')) {
+                                store.deleteRecurring(r.id);
+                              }
+                            },
+                            child: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, size: 20),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -132,8 +170,18 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
-          TextButton.icon(onPressed: onAdd, icon: const Icon(Icons.add, size: 18), label: const Text('Add')),
+          Expanded(child: Text(title, style: Theme.of(context).typography.large)),
+          Button.ghost(
+            onPressed: onAdd,
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HugeIcon(icon: HugeIcons.strokeRoundedAdd01, size: 18),
+                SizedBox(width: 4),
+                Text('Add'),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -147,14 +195,12 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final isExpense = cat.type == TxType.expense;
     final hasLimit = isExpense && cat.budget > 0;
     final ratio = hasLimit ? spent / cat.budget : 0.0;
 
     return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+      child: GestureDetector(
         onTap: isExpense
             ? () async {
                 final v = await askNumber(
@@ -173,9 +219,16 @@ class _CategoryCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: cat.colorValue.withValues(alpha: 0.18),
-                child: Icon(cat.iconData, color: cat.colorValue),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: cat.colorValue.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Center(
+                  child: HugeIcon(icon: cat.iconData, color: cat.colorValue, size: 20),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -191,41 +244,44 @@ class _CategoryCard extends StatelessWidget {
                             : spent > 0
                                 ? '${money(spent, store.currency)} spent, no limit'
                                 : 'No limit. Tap to set',
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: Theme.of(context).typography.small,
                       ),
                     ],
                     if (hasLimit) ...[
                       const SizedBox(height: 6),
                       LinearProgressIndicator(
                         value: ratio.clamp(0.0, 1.0).toDouble(),
-                        minHeight: 6,
-                        borderRadius: BorderRadius.circular(4),
-                        color: ratio >= 1
-                            ? cs.error
-                            : ratio >= 0.8
-                                ? Colors.orange
-                                : cat.colorValue,
-                        backgroundColor: cat.colorValue.withValues(alpha: 0.15),
                       ),
                     ],
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                onSelected: (v) async {
-                  if (v == 'edit') {
-                    await showCategoryDialog(context, type: cat.type, edit: cat);
-                  } else if (v == 'delete') {
-                    if (await confirm(context, 'Delete ${cat.name}?',
-                        'Existing transactions will show as Uncategorized.')) {
-                      store.deleteCategory(cat.id);
-                    }
-                  }
+              Button.ghost(
+                onPressed: () async {
+                  showDropdown<String>(
+                    context: context,
+                    builder: (context) => DropdownMenu(
+                      children: [
+                        MenuButton(
+                          onPressed: (ctx) async {
+                            await showCategoryDialog(ctx, type: cat.type, edit: cat);
+                          },
+                          child: const Text('Edit'),
+                        ),
+                        MenuButton(
+                          onPressed: (ctx) async {
+                            if (await confirm(ctx, 'Delete ${cat.name}?',
+                                'Existing transactions will show as Uncategorized.')) {
+                              store.deleteCategory(cat.id);
+                            }
+                          },
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
+                child: const HugeIcon(icon: HugeIcons.strokeRoundedMoreVertical, size: 20),
               ),
             ],
           ),

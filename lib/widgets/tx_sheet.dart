@@ -1,18 +1,21 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../models.dart';
 import '../store.dart';
-import '../utils.dart';
 import 'category_dialog.dart';
 
-Future<void> showTxSheet(BuildContext context, {Tx? edit}) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    useSafeArea: true,
+Future<void> showTxSheet(BuildContext context, {Tx? edit}) async {
+  final result = showOverlay<void>(
+    context,
+    SheetConfiguration(
+      position: OverlayPosition.bottom,
+      draggable: true,
+      useSafeArea: true,
+    ),
     builder: (_) => TxSheet(edit: edit),
   );
+  await result.future;
 }
 
 class TxSheet extends StatefulWidget {
@@ -54,13 +57,7 @@ class _TxSheetState extends State<TxSheet> {
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _date,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
+  void _pickDate(DateTime? d) {
     if (d == null) return;
     final now = DateTime.now();
     setState(() => _date = DateTime(d.year, d.month, d.day, now.hour, now.minute, now.second));
@@ -101,7 +98,7 @@ class _TxSheetState extends State<TxSheet> {
       r.next = r.advance(r.next);
       store.addRecurring(r);
     }
-    Navigator.pop(context);
+    closeOverlay(context);
   }
 
   @override
@@ -120,30 +117,26 @@ class _TxSheetState extends State<TxSheet> {
           children: [
             Text(
               isEdit ? 'Edit transaction' : 'New transaction',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).typography.xLarge,
             ),
             const SizedBox(height: 16),
-            SegmentedButton<TxType>(
-              segments: const [
-                ButtonSegment(value: TxType.expense, label: Text('Expense'), icon: Icon(Icons.arrow_upward)),
-                ButtonSegment(value: TxType.income, label: Text('Income'), icon: Icon(Icons.arrow_downward)),
-              ],
-              selected: {_type},
-              onSelectionChanged: (s) => setState(() {
-                _type = s.first;
+            Tabs(
+              index: _type == TxType.expense ? 0 : 1,
+              onChanged: (i) => setState(() {
+                _type = i == 0 ? TxType.expense : TxType.income;
                 _catId = null;
               }),
+              children: const [
+                TabChildWidget(child: Text('Expense')),
+                TabChildWidget(child: Text('Income')),
+              ],
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _amount,
               autofocus: !isEdit,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: Theme.of(context).textTheme.headlineMedium,
-              decoration: InputDecoration(
-                prefixText: '${store.currency}  ',
-                hintText: '0',
-              ),
+              placeholder: Text('${store.currency} 0'),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -151,49 +144,43 @@ class _TxSheetState extends State<TxSheet> {
               runSpacing: 4,
               children: [
                 for (final c in cats)
-                  ChoiceChip(
-                    avatar: Icon(c.iconData, size: 18, color: c.colorValue),
-                    label: Text(c.name),
-                    selected: _catId == c.id,
-                    onSelected: (_) => setState(() => _catId = c.id),
+                  Chip(
+                    leading: HugeIcon(icon: c.iconData, size: 18, color: c.colorValue),
+                    onPressed: () => setState(() => _catId = c.id),
+                    style: _catId == c.id ? ButtonStyle.primary() : ButtonStyle.outline(),
+                    child: Text(c.name),
                   ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 18),
-                  label: const Text('New'),
+                Chip(
+                  leading: const HugeIcon(icon: HugeIcons.strokeRoundedAdd01, size: 18),
                   onPressed: () async {
                     final c = await showCategoryDialog(context, type: _type);
                     if (c != null) setState(() => _catId = c.id);
                   },
+                  style: ButtonStyle.outline(),
+                  child: const Text('New'),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickDate,
-                    icon: const Icon(Icons.event),
-                    label: Text(dayLabel(_date)),
-                  ),
-                ),
-              ],
+            DatePicker(
+              value: _date,
+              onChanged: _pickDate,
+              placeholder: const Text('Select date'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _note,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(hintText: 'Note (optional)'),
+              placeholder: const Text('Note (optional)'),
             ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               children: [
                 for (final m in kMethods)
-                  ChoiceChip(
-                    label: Text(m),
-                    selected: _method == m,
-                    onSelected: (_) => setState(() => _method = m),
+                  Chip(
+                    onPressed: () => setState(() => _method = m),
+                    style: _method == m ? ButtonStyle.primary() : ButtonStyle.outline(),
+                    child: Text(m),
                   ),
               ],
             ),
@@ -201,26 +188,26 @@ class _TxSheetState extends State<TxSheet> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.repeat, size: 18, color: cs.onSurfaceVariant),
+                  HugeIcon(icon: HugeIcons.strokeRoundedRepeat, size: 18, color: cs.mutedForeground),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Wrap(
                     spacing: 8,
                     children: [
-                      ChoiceChip(
-                        label: const Text('One time'),
-                        selected: _repeat == null,
-                        onSelected: (_) => setState(() => _repeat = null),
+                      Chip(
+                        onPressed: () => setState(() => _repeat = null),
+                        style: _repeat == null ? ButtonStyle.primary() : ButtonStyle.outline(),
+                        child: const Text('One time'),
                       ),
-                      ChoiceChip(
-                        label: const Text('Weekly'),
-                        selected: _repeat == Repeat.weekly,
-                        onSelected: (_) => setState(() => _repeat = Repeat.weekly),
+                      Chip(
+                        onPressed: () => setState(() => _repeat = Repeat.weekly),
+                        style: _repeat == Repeat.weekly ? ButtonStyle.primary() : ButtonStyle.outline(),
+                        child: const Text('Weekly'),
                       ),
-                      ChoiceChip(
-                        label: const Text('Monthly'),
-                        selected: _repeat == Repeat.monthly,
-                        onSelected: (_) => setState(() => _repeat = Repeat.monthly),
+                      Chip(
+                        onPressed: () => setState(() => _repeat = Repeat.monthly),
+                        style: _repeat == Repeat.monthly ? ButtonStyle.primary() : ButtonStyle.outline(),
+                        child: const Text('Monthly'),
                       ),
                     ],
                   )),
@@ -229,13 +216,15 @@ class _TxSheetState extends State<TxSheet> {
             ],
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: TextStyle(color: cs.error)),
+              Text(_error!, style: TextStyle(color: cs.destructive)),
             ],
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _save,
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-              child: Text(isEdit ? 'Save changes' : 'Add'),
+            SizedBox(
+              width: double.infinity,
+              child: Button.primary(
+                onPressed: _save,
+                child: Text(isEdit ? 'Save changes' : 'Add'),
+              ),
             ),
           ],
         ),

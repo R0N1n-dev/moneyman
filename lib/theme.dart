@@ -1,35 +1,14 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-ThemeData buildTheme(Color seed, Brightness brightness) {
-  final cs = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
+ThemeData buildTheme(int accentValue, Brightness brightness) {
+  final base = brightness == Brightness.light
+      ? ColorSchemes.lightZinc
+      : ColorSchemes.darkZinc;
+  final colorScheme = base.recolor(Color(accentValue));
   return ThemeData(
-    useMaterial3: true,
-    colorScheme: cs,
-    scaffoldBackgroundColor: cs.surface,
-    cardTheme: CardThemeData(
-      elevation: 0,
-      color: cs.surfaceContainerLow,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: cs.surface,
-      surfaceTintColor: Colors.transparent,
-      scrolledUnderElevation: 0,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: cs.surfaceContainer,
-      indicatorColor: cs.primaryContainer,
-    ),
-    dividerColor: Colors.transparent,
+    colorScheme: colorScheme,
+    radius: 0.6,
+    scaling: 1.0,
   );
 }
 

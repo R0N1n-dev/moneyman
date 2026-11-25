@@ -1,4 +1,5 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../store.dart';
 import '../utils.dart';
@@ -13,19 +14,20 @@ class MonthSwitcher extends StatelessWidget {
       builder: (context, _) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.chevron_left),
+          Button.ghost(
             onPressed: () => store.shiftMonth(-1),
+            child: const HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01, size: 20),
           ),
-          Text(
-            monthLabel(store.month),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              monthLabel(store.month),
+              style: Theme.of(context).typography.large.copyWith(fontWeight: FontWeight.w600),
+            ),
           ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.chevron_right),
+          Button.ghost(
             onPressed: store.isCurrentMonth ? null : () => store.shiftMonth(1),
+            child: const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 20),
           ),
         ],
       ),

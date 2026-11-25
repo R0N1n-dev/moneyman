@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 
 import '../models.dart';
@@ -23,7 +24,7 @@ class _StatsPageState extends State<StatsPage> {
       listenable: store,
       builder: (context, _) {
         final cs = Theme.of(context).colorScheme;
-        final tt = Theme.of(context).textTheme;
+        final tt = Theme.of(context).typography;
         final cur = store.currency;
         final byCat = store.byCategory(_type).entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
@@ -41,13 +42,13 @@ class _StatsPageState extends State<StatsPage> {
           children: [
             const Align(alignment: Alignment.centerLeft, child: MonthSwitcher()),
             const SizedBox(height: 8),
-            SegmentedButton<TxType>(
-              segments: const [
-                ButtonSegment(value: TxType.expense, label: Text('Expenses')),
-                ButtonSegment(value: TxType.income, label: Text('Income')),
+            Tabs(
+              index: _type == TxType.expense ? 0 : 1,
+              onChanged: (i) => setState(() => _type = i == 0 ? TxType.expense : TxType.income),
+              children: const [
+                TabChildWidget(child: Text('Expenses')),
+                TabChildWidget(child: Text('Income')),
               ],
-              selected: {_type},
-              onSelectionChanged: (s) => setState(() => _type = s.first),
             ),
             const SizedBox(height: 16),
             if (total == 0)
@@ -56,9 +57,13 @@ class _StatsPageState extends State<StatsPage> {
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.insights_outlined, size: 64, color: cs.outline),
+                      HugeIcon(
+                        icon: HugeIcons.strokeRoundedChartAnalysis,
+                        size: 64,
+                        color: cs.mutedForeground,
+                      ),
                       const SizedBox(height: 8),
-                      Text('Nothing to chart yet', style: tt.titleMedium),
+                      Text('Nothing to chart yet', style: tt.large),
                     ],
                   ),
                 ),
@@ -90,7 +95,7 @@ class _StatsPageState extends State<StatsPage> {
                                       titleStyle: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: Color(0xFFFFFFFF),
                                       ),
                                     ),
                                 ],
@@ -99,10 +104,10 @@ class _StatsPageState extends State<StatsPage> {
                             Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(_type == TxType.expense ? 'Spent' : 'Earned', style: tt.labelMedium),
+                                Text(_type == TxType.expense ? 'Spent' : 'Earned', style: tt.small),
                                 Text(
                                   '$cur ${compact(total)}',
-                                  style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                                  style: tt.xLarge.copyWith(fontWeight: FontWeight.w700),
                                 ),
                               ],
                             ),
@@ -118,10 +123,16 @@ class _StatsPageState extends State<StatsPage> {
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: c.colorValue.withValues(alpha: 0.18),
-                                  child: Icon(c.iconData, size: 16, color: c.colorValue),
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: c.colorValue.withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Center(
+                                    child: HugeIcon(icon: c.iconData, size: 16, color: c.colorValue),
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -140,10 +151,6 @@ class _StatsPageState extends State<StatsPage> {
                                       const SizedBox(height: 4),
                                       LinearProgressIndicator(
                                         value: pct,
-                                        minHeight: 6,
-                                        borderRadius: BorderRadius.circular(4),
-                                        color: c.colorValue,
-                                        backgroundColor: c.colorValue.withValues(alpha: 0.15),
                                       ),
                                     ],
                                   ),
@@ -185,7 +192,7 @@ class _StatsPageState extends State<StatsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Day by day', style: tt.titleMedium),
+                      Text('Day by day', style: tt.large),
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 160,
@@ -206,7 +213,7 @@ class _StatsPageState extends State<StatsPage> {
                                     if (d != 1 && d % 5 != 0) return const SizedBox.shrink();
                                     return SideTitleWidget(
                                       meta: meta,
-                                      child: Text('$d', style: tt.labelSmall),
+                                      child: Text('$d', style: tt.xSmall),
                                     );
                                   },
                                 ),
@@ -250,18 +257,18 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
+    final tt = Theme.of(context).typography;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: tt.labelSmall),
+            Text(label, style: tt.xSmall),
             const SizedBox(height: 4),
             FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(value, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              child: Text(value, style: tt.large.copyWith(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -274,7 +281,7 @@ class _SixMonths extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final tt = Theme.of(context).typography;
     final months = [
       for (var i = 5; i >= 0; i--) DateTime(store.month.year, store.month.month - i),
     ];
@@ -289,8 +296,8 @@ class _SixMonths extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text('Last 6 months', style: tt.titleMedium)),
-                _Dot(color: Colors.green.shade500, label: 'Income'),
+                Expanded(child: Text('Last 6 months', style: tt.large)),
+                _Dot(color: const Color(0xFF16A34A), label: 'Income'),
                 const SizedBox(width: 12),
                 _Dot(color: cs.primary, label: 'Spent'),
               ],
@@ -312,7 +319,7 @@ class _SixMonths extends StatelessWidget {
                         reservedSize: 24,
                         getTitlesWidget: (v, meta) => SideTitleWidget(
                           meta: meta,
-                          child: Text(DateFormat('MMM').format(months[v.toInt()]), style: tt.labelSmall),
+                          child: Text(DateFormat('MMM').format(months[v.toInt()]), style: tt.xSmall),
                         ),
                       ),
                     ),
@@ -326,7 +333,7 @@ class _SixMonths extends StatelessWidget {
                           BarChartRodData(
                             toY: earned[i],
                             width: 10,
-                            color: Colors.green.shade500,
+                            color: const Color(0xFF16A34A),
                             borderRadius: BorderRadius.circular(3),
                           ),
                           BarChartRodData(
@@ -357,9 +364,13 @@ class _Dot extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(radius: 5, backgroundColor: color),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 4),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(label, style: Theme.of(context).typography.xSmall),
       ],
     );
   }
